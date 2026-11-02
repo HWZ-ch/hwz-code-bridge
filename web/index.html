@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HWZ 代码互换工坊 · 网页版</title>
+    <meta name="description" content="HWZ工作室出品的代码互换工具：Python / JavaScript / TypeScript / C# / Java / C++ 六种语言任意互转，并提供可执行文件打包命令生成。">
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230FA3A0'/%3E%3Ctext x='32' y='42' font-size='26' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EHW%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<div class="app">
+    <!-- ═════════ 侧栏 ═════════ -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">HW</div>
+            <div class="brand-text">
+                <b>代码互换工坊</b>
+                <span>CODE BRIDGE · WEB</span>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <button class="nav-btn active" data-page="convert"><span class="ico">⇄</span>代码互换</button>
+            <button class="nav-btn" data-page="build"><span class="ico">⚡</span>编译为 EXE</button>
+            <button class="nav-btn" data-page="tools"><span class="ico">◆</span>工具中心</button>
+            <button class="nav-btn" data-page="history"><span class="ico">▤</span>转换记录</button>
+            <button class="nav-btn" data-page="log"><span class="ico">!</span>运行日志</button>
+            <div class="nav-sep"></div>
+            <button class="nav-btn" data-page="settings"><span class="ico">⚙</span>设置</button>
+            <button class="nav-btn" data-page="about"><span class="ico">i</span>关于</button>
+        </nav>
+
+        <div class="side-foot">
+            v1.0.0 · 网页版<br>
+            署名：HWZ工作室
+        </div>
+    </aside>
+
+    <!-- ═════════ 主区 ═════════ -->
+    <main class="main">
+
+        <!-- ───── 代码互换 ───── -->
+        <section class="page active" id="page-convert">
+            <h1 class="page-title">代码互换</h1>
+            <p class="page-desc">
+                支持 Python、JavaScript、TypeScript、C#、Java、C++ 六种语言的任意双向转换。
+                自动处理缩进块与花括号块的结构对应，并把无法等价表达的部分逐行标注出来。
+            </p>
+
+            <div class="card">
+                <div class="toolbar" style="margin-bottom:0">
+                    <span class="label" style="margin:0">源语言</span>
+                    <select id="srcLang" class="field" style="width:136px"></select>
+                    <button id="swapBtn" class="btn swap-btn" title="交换源语言与目标语言">⇄</button>
+                    <span class="label" style="margin:0">目标语言</span>
+                    <select id="dstLang" class="field" style="width:136px"></select>
+                    <span class="spacer"></span>
+                    <button id="clearBtn" class="btn">清空</button>
+                    <button id="convertBtn" class="btn btn-primary">开始转换</button>
+                </div>
+            </div>
+
+            <div class="editor-grid" style="margin-top:12px">
+                <div class="card editor-pane">
+                    <div class="card-head">
+                        <div class="card-title">源代码 <span class="meta" id="srcMeta">0 行</span></div>
+                        <div class="row">
+                            <button class="btn btn-sm" id="sampleBtn">示例</button>
+                            <button class="btn btn-sm" id="openBtn">打开文件</button>
+                        </div>
+                    </div>
+                    <textarea id="srcCode" class="code-area" spellcheck="false"
+                              placeholder="把代码文件拖到这里，也可以直接粘贴代码，或点击「打开文件」"></textarea>
+                </div>
+
+                <div class="card editor-pane">
+                    <div class="card-head">
+                        <div class="card-title">转换结果 <span class="meta" id="dstMeta">等待转换</span></div>
+                        <div class="row">
+                            <button class="btn btn-sm" id="copyBtn">复制</button>
+                            <button class="btn btn-sm" id="saveBtn">下载</button>
+                        </div>
+                    </div>
+                    <textarea id="dstCode" class="code-area" readonly spellcheck="false"
+                              placeholder="转换结果会显示在这里"></textarea>
+                </div>
+            </div>
+
+            <div class="card notes" id="notesPanel">
+                <div class="card-title">转换提示 <span class="meta" id="notesCount"></span></div>
+                <div class="notes-list" id="notesList"></div>
+            </div>
+        </section>
+
+        <!-- ───── 编译为 EXE ───── -->
+        <section class="page" id="page-build">
+            <h1 class="page-title">编译为可执行文件</h1>
+            <p class="page-desc">
+                网页运行在浏览器沙箱里，无法直接调用本机编译器。这里根据你的选择生成一份可直接运行的打包命令，
+                并支持下载为 Windows 批处理脚本 —— 双击即可在你自己电脑上完成打包。
+            </p>
+
+            <div class="notice warn">
+                <span>⚠</span>
+                <div>
+                    <strong>网页版不执行编译。</strong>
+                    原因是浏览器无法访问本机文件系统与命令行。生成的命令与桌面版完全一致，
+                    在安装了对应工具的电脑上运行即可得到 exe。
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="grid-3">
+                    <div>
+                        <label class="label" for="buildLang">源语言</label>
+                        <select id="buildLang" class="field"></select>
+                    </div>
+                    <div>
+                        <label class="label" for="buildTool">打包工具</label>
+                        <select id="buildTool" class="field"></select>
+                    </div>
+                    <div>
+                        <label class="label" for="buildArch">目标架构</label>
+                        <select id="buildArch" class="field">
+                            <option value="win-x64">win-x64（64 位，推荐）</option>
+                            <option value="win-x86">win-x86（32 位）</option>
+                            <option value="win-arm64">win-arm64（ARM64）</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-3" style="margin-top:14px">
+                    <div>
+                        <label class="label" for="buildFile">源文件名</label>
+                        <input id="buildFile" class="field" placeholder="例如 app.py" value="app.py">
+                    </div>
+                    <div>
+                        <label class="label" for="buildName">产物名称</label>
+                        <input id="buildName" class="field" placeholder="例如 MyApp" value="MyApp">
+                    </div>
+                    <div style="display:flex;align-items:flex-end;gap:10px;padding-bottom:3px">
+                        <label class="check"><input type="checkbox" id="buildUpx"><span class="box"></span>UPX 压缩</label>
+                    </div>
+                </div>
+
+                <div class="tool-src" id="buildToolInfo" style="margin-top:14px"></div>
+
+                <div class="row" style="margin-top:16px">
+                    <button class="btn btn-primary" id="genCmdBtn">生成命令</button>
+                    <button class="btn" id="downloadBatBtn">下载 .bat 脚本</button>
+                    <button class="btn" id="copyCmdBtn">复制命令</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-title">生成的命令 <span class="meta" id="cmdMeta">尚未生成</span></div>
+                </div>
+                <code class="cmd" id="buildCmd">点击上方「生成命令」后显示</code>
+            </div>
+        </section>
+
+        <!-- ───── 工具中心 ───── -->
+        <section class="page" id="page-tools">
+            <h1 class="page-title">工具中心</h1>
+            <p class="page-desc">
+                本工具不内嵌任何编译器，全部通过命令行调用本机已安装的第三方工具。
+                下面每个工具都标注了来源组织、官方主页与许可证，便于核对与合规审计。
+            </p>
+            <div class="notice">
+                <span>i</span>
+                <div>许可证信息以各项目官方页面为准。若你计划分发包含这些工具产物的软件，请先确认对应的许可证义务。</div>
+            </div>
+            <div class="card" style="padding:12px">
+                <div id="toolList"></div>
+            </div>
+        </section>
+
+        <!-- ───── 转换记录 ───── -->
+        <section class="page" id="page-history">
+            <h1 class="page-title">转换记录</h1>
+            <p class="page-desc">
+                记录每一次代码互换与打包命令生成，保存在本机浏览器中，最多保留 200 条，可在设置中关闭。
+            </p>
+
+            <div class="card">
+                <div class="toolbar" style="margin-bottom:0">
+                    <input id="recordSearch" class="field" style="flex:1;min-width:180px" placeholder="搜索文件名、转换路径或状态…">
+                    <select id="recordKind" class="field" style="width:136px">
+                        <option value="all">全部类型</option>
+                        <option value="convert">代码互换</option>
+                        <option value="build">打包命令</option>
+                    </select>
+                    <button class="btn" id="exportRecordsBtn">导出 CSV</button>
+                    <button class="btn" id="clearRecordsBtn">清空记录</button>
+                </div>
+            </div>
+
+            <div style="margin-top:12px" id="recordList"></div>
+        </section>
+
+        <!-- ───── 运行日志 ───── -->
+        <section class="page" id="page-log">
+            <h1 class="page-title">运行日志</h1>
+            <p class="page-desc">
+                页面的初始化、转换、异常都会记录在这里。遇到问题时可导出诊断报告，便于定位与反馈。
+            </p>
+
+            <div class="card">
+                <div class="toolbar" style="margin-bottom:0">
+                    <select id="logLevel" class="field" style="width:160px">
+                        <option value="all">全部级别</option>
+                        <option value="warn">仅警告与错误</option>
+                        <option value="error">仅错误</option>
+                    </select>
+                    <span class="spacer"></span>
+                    <button class="btn" id="exportLogBtn">导出诊断报告</button>
+                    <button class="btn" id="clearLogBtn">清空</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:12px;padding:12px">
+                <div class="log-box" id="logBox"></div>
+            </div>
+        </section>
+
+        <!-- ───── 设置 ───── -->
+        <section class="page" id="page-settings">
+            <h1 class="page-title">设置</h1>
+            <p class="page-desc">所有改动即时保存在本机浏览器（localStorage），下次打开自动恢复。</p>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px">外观</div>
+                <div class="grid-2">
+                    <div>
+                        <label class="label" for="setTheme">主题</label>
+                        <select id="setTheme" class="field">
+                            <option value="light">浅色 · 清新</option>
+                            <option value="dark">深色 · 夜间</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label" for="setFont">代码字号（px）</label>
+                        <input id="setFont" class="field" type="number" min="11" max="20" step="1" value="13">
+                    </div>
+                </div>
+                <div style="margin-top:14px">
+                    <label class="check"><input type="checkbox" id="setWrap"><span class="box"></span>代码自动换行</label>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px">行为</div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    <label class="check"><input type="checkbox" id="setHistory"><span class="box"></span>保存转换与打包记录（最多 200 条）</label>
+                    <label class="check"><input type="checkbox" id="setRemember"><span class="box"></span>记住上次选择的源语言与目标语言</label>
+                    <label class="check"><input type="checkbox" id="setCopy"><span class="box"></span>转换完成后自动把结果复制到剪贴板</label>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom:10px">数据</div>
+                <p class="page-desc" style="margin-bottom:12px" id="dataInfo"></p>
+                <div class="row">
+                    <button class="btn" id="resetSettingsBtn">恢复默认设置</button>
+                    <button class="btn" id="wipeAllBtn">清除全部本地数据</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───── 关于 ───── -->
+        <section class="page" id="page-about">
+            <h1 class="page-title">关于</h1>
+
+            <div class="card">
+                <div style="display:flex;gap:18px;align-items:flex-start">
+                    <div class="brand-logo" style="width:58px;height:58px;border-radius:16px;font-size:19px">HW</div>
+                    <div>
+                        <div style="font-size:21px;font-weight:600">HWZ 代码互换工坊</div>
+                        <div class="meta" style="margin-top:6px">网页版 v1.0.0 · 与 Windows 桌面版共用同一套转换引擎</div>
+                        <div class="row" style="margin-top:12px">
+                            <span class="tag" style="background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:11.5px;padding:4px 10px">署名：HWZ工作室</span>
+                            <span class="tag" style="font-size:11.5px;padding:4px 10px">纯前端 · 代码不上传</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom:10px">它做什么</div>
+                <p class="page-desc" style="margin:0 0 8px">
+                    一、主流代码互换：六种语言任意两两转换，自动完成缩进块与花括号块的互译，并给出需要人工复核的提示。
+                </p>
+                <p class="page-desc" style="margin:0 0 8px">
+                    二、打包命令生成：按所选语言与工具生成可复现的编译命令，可一键下载为 Windows 批处理脚本。
+                </p>
+                <p class="page-desc" style="margin:0">
+                    三、可追溯：转换记录、设置与运行日志都保存在本机浏览器，可随时导出 CSV 与诊断报告。
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom:6px">第三方工具与来源声明</div>
+                <p class="page-desc" style="margin:0 0 12px">
+                    本工具不内嵌上述工具，只生成调用命令。下列信息用于标明来源，许可证细则以各项目官方页面为准。
+                </p>
+                <div id="aboutTools"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" style="margin-bottom:10px">使用须知</div>
+                <p class="page-desc" style="margin:0 0 8px">
+                    代码互换基于语法规则重写，不做完整语义分析与类型推导。涉及反射、元编程、异步调度、装饰器、
+                    运算符重载的代码，转换结果可能无法直接编译，请务必人工复核后再使用。
+                </p>
+                <p class="page-desc" style="margin:0">
+                    所有代码只在本机浏览器中处理，不会上传到任何服务器。
+                </p>
+            </div>
+
+            <p class="page-desc" style="text-align:center;margin-top:18px">HWZ 代码互换工坊 · 由 HWZ工作室 设计与开发</p>
+        </section>
+
+    </main>
+</div>
+
+<div id="drop-mask">
+    <div class="inner">
+        <b>松开鼠标即可载入代码文件</b>
+        <p>支持 .py .js .ts .cs .java .cpp</p>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="assets/engine.js"></script>
+<script src="assets/engine-py2brace.js"></script>
+<script src="assets/engine-brace2py.js"></script>
+<script src="assets/engine-convert.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

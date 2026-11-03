@@ -1,0 +1,64 @@
+<Window x:Class="HWZCodeBridge.Views.AnnouncementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="公告"
+        Height="470" Width="600"
+        MinHeight="380" MinWidth="480"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBgBrush}"
+        FontFamily="{DynamicResource UiFont}"
+        TextOptions.TextFormattingMode="Display">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 级别色条 -->
+        <Border x:Name="LevelBar" Grid.Row="0" Height="4" Background="{DynamicResource AccentBrush}" />
+
+        <!-- 标题区 -->
+        <StackPanel Grid.Row="1" Margin="26,20,26,14">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <Border x:Name="LevelBadge" CornerRadius="5" Padding="8,2" BorderThickness="1"
+                        BorderBrush="{DynamicResource AccentBrush}" Background="Transparent">
+                    <TextBlock x:Name="LevelBadgeText" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentBrush}" Text="公告" />
+                </Border>
+                <TextBlock x:Name="TimeText" Style="{StaticResource Muted}" Margin="10,3,0,0"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock x:Name="TitleText" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+        </StackPanel>
+
+        <!-- 正文 -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Padding="16" Margin="26,0,26,14">
+            <TextBox x:Name="ContentBox" Style="{StaticResource CodeBox}"
+                     FontFamily="{DynamicResource UiFont}" FontSize="13"
+                     TextWrapping="Wrap" IsReadOnly="True" />
+        </Border>
+
+        <!-- 底部 -->
+        <Grid Grid.Row="3" Margin="26,0,26,22">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Style="{StaticResource Muted}" VerticalAlignment="Center"
+                       Text="公告来自项目仓库，可在编辑器中修改" TextWrapping="Wrap" />
+
+            <Button x:Name="ActionBtn" Grid.Column="1" Style="{StaticResource GhostButton}"
+                    Margin="0,0,8,0" Visibility="Collapsed" Click="Action_Click" />
+
+            <Button Grid.Column="2" Content="我知道了" Style="{StaticResource PrimaryButton}"
+                    Click="Close_Click" />
+        </Grid>
+    </Grid>
+</Window>

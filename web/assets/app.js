@@ -988,7 +988,15 @@
             log('error', '脚本', '未处理的 Promise 异常：' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
         });
 
+        $('ann-close').addEventListener('click', closeAnnouncement);
+
+        $('announcement-modal').addEventListener('click', function (e) {
+            if (e.target === this) closeAnnouncement();
+        });
+
         document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeAnnouncement();
+
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 if ($('page-convert').classList.contains('active')) {
                     e.preventDefault();
@@ -996,6 +1004,85 @@
                 }
             }
         });
+    }
+
+    // ═══════════ 公告 ═══════════
+
+    const ANNOUNCEMENT_URL = 'https://api.github.com/repos/HWZ-ch/hwz-code-bridge/contents/announcement.json?ref=main';
+
+    async function loadAnnouncement() {
+        try {
+            const resp = await fetch(ANNOUNCEMENT_URL, {
+                headers: { 'Accept': 'application/vnd.github+json' }
+            });
+
+            if (!resp.ok) {
+                log('info', '公告', '未获取到公告（HTTP ' + resp.status + '）');
+                return;
+            }
+
+            const data = await resp.json();
+            if (!data || !data.content) return;
+
+            // GitHub 返回的 content 是带换行的 base64，需先清理再按 UTF-8 解码
+            const base64 = String(data.content).replace(/\s/g, '');
+            const bytes = Uint8Array.from(atob(base64), function (c) { return c.charCodeAt(0); });
+            const text = new TextDecoder('utf-8').decode(bytes);
+
+            const ann = JSON.parse(text);
+
+            if (!ann || ann.enabled === false) return;
+            if (!ann.title && !ann.content) return;
+
+            showAnnouncement(ann);
+            log('info', '公告', '已展示公告：' + (ann.title || '（无标题）'));
+        } catch (err) {
+            log('info', '公告', '公告加载失败：' + (err && err.message ? err.message : String(err)));
+        }
+    }
+
+    function showAnnouncement(ann) {
+        const color = ann.level === 'warn' ? 'var(--warn)'
+            : ann.level === 'important' ? 'var(--danger)'
+                : 'var(--accent)';
+
+        const bar = $('ann-bar');
+        const badge = $('ann-badge');
+
+        bar.style.background = color;
+        badge.style.borderColor = color;
+        badge.style.color = color;
+        badge.textContent = ann.level === 'warn' ? '注意'
+            : ann.level === 'important' ? '重要'
+                : '公告';
+
+        $('ann-title').textContent = ann.title || '公告';
+        $('ann-content').textContent = ann.content || '';
+
+        const time = (function () {
+            if (!ann.publishedAt) return '';
+            const d = new Date(ann.publishedAt);
+            if (isNaN(d.getTime())) return '';
+            return '发布于 ' + d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
+                ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+        })();
+
+        $('ann-time').textContent = time;
+
+        const action = $('ann-action');
+        if (ann.actionText && /^https?:\/\//i.test(ann.actionUrl || '')) {
+            action.textContent = ann.actionText;
+            action.href = ann.actionUrl;
+            action.style.display = '';
+        } else {
+            action.style.display = 'none';
+        }
+
+        $('announcement-modal').classList.add('show');
+    }
+
+    function closeAnnouncement() {
+        $('announcement-modal').classList.remove('show');
     }
 
     // ═══════════ 启动 ═══════════
@@ -1021,9 +1108,12 @@
         const initial = (location.hash || '#convert').slice(1);
         switchPage($('page-' + initial) ? initial : 'convert');
 
-        log('info', '启动', 'HWZ 代码互换工坊 网页版 v1.0.0 已就绪');
+        log('info', '启动', 'HWZ 代码互换工坊 网页版 v1.0.2 已就绪');
         log('info', '环境', '浏览器：' + navigator.userAgent);
         log('info', '引擎', '已加载 ' + E.languages.length + ' 种语言，支持 ' + (E.languages.length * (E.languages.length - 1)) + ' 种转换组合');
+
+        // 公告稍后加载，避免与首屏渲染争抢
+        setTimeout(loadAnnouncement, 900);
     }
 
     if (document.readyState === 'loading') {

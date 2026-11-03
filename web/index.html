@@ -33,7 +33,7 @@
         </nav>
 
         <div class="side-foot">
-            v1.0.0 · 网页版<br>
+            v1.0.2 · 网页版<br>
             署名：HWZ工作室
         </div>
     </aside>
@@ -279,7 +279,7 @@
                     <div class="brand-logo" style="width:58px;height:58px;border-radius:16px;font-size:19px">HW</div>
                     <div>
                         <div style="font-size:21px;font-weight:600">HWZ 代码互换工坊</div>
-                        <div class="meta" style="margin-top:6px">网页版 v1.0.0 · 与 Windows 桌面版共用同一套转换引擎</div>
+                        <div class="meta" style="margin-top:6px">网页版 v1.0.2 · 与 Windows 桌面版共用同一套转换引擎</div>
                         <div class="row" style="margin-top:12px">
                             <span class="tag" style="background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:11.5px;padding:4px 10px">署名：HWZ工作室</span>
                             <span class="tag" style="font-size:11.5px;padding:4px 10px">纯前端 · 代码不上传</span>
@@ -324,6 +324,27 @@
         </section>
 
     </main>
+</div>
+
+<div id="announcement-modal" class="modal-mask">
+    <div class="modal-card">
+        <div class="modal-bar" id="ann-bar"></div>
+        <div class="modal-body">
+            <div class="modal-head">
+                <span class="modal-badge" id="ann-badge">公告</span>
+                <span class="modal-time" id="ann-time"></span>
+            </div>
+            <h2 class="modal-title" id="ann-title"></h2>
+            <div class="modal-content" id="ann-content"></div>
+        </div>
+        <div class="modal-foot">
+            <span class="modal-note">公告来自项目仓库，可在编辑器中修改</span>
+            <div class="modal-actions">
+                <a class="btn" id="ann-action" target="_blank" rel="noopener" style="display:none"></a>
+                <button class="btn btn-primary" id="ann-close">我知道了</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="drop-mask">

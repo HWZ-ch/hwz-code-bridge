@@ -3,7 +3,7 @@
 > 主流编程语言代码互换 + 源码打包为 Windows 可执行文件的一体化工具。
 > 提供 **Windows 桌面版** 与 **纯前端网页版** 两个形态，共用同一套转换引擎。
 
-**署名：HWZ工作室** · 版本 1.0.1
+**署名：HWZ工作室** · 版本 1.0.2 beta
 
 ---
 
@@ -66,6 +66,44 @@ Python · JavaScript · TypeScript · C# · Java · C++
 
 > 运行中的 exe 无法自我覆盖，因此替换由一段临时批处理脚本在进程退出后完成，随后自动重启新版本。
 
+## 公告系统
+
+公告保存在仓库根目录的 **`announcement.json`**，桌面版与网页版在每次打开时拉取并弹窗展示。
+
+```json
+{
+  "id": "2026-11-03-01",
+  "title": "公告标题",
+  "content": "正文，支持 \n 换行",
+  "level": "info",
+  "enabled": true,
+  "publishedAt": "2026-11-03T22:00:00+08:00",
+  "actionText": "查看项目主页",
+  "actionUrl": "https://github.com/HWZ-ch/hwz-code-bridge"
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `level` | `info` 青绿 / `warn` 橙 / `important` 红，决定弹窗配色 |
+| `enabled` | `false` 时客户端完全不显示公告 |
+| `actionText` + `actionUrl` | 可选的跳转按钮，仅接受 http/https |
+| `publishedAt` | ISO 8601 时间，界面显示为本地时间 |
+
+客户端通过 **GitHub Contents API** 读取（而非 raw 域名），因此不受部分网络环境下 `raw.githubusercontent.com` 解析异常的影响。任何拉取失败都静默处理，不影响程序启动。
+
+### 公告编辑器
+
+配套的 **HWZ 公告编辑器**（`dist/HWZAnnouncementTool.exe`，随 Release 一同分发）用于维护公告：
+
+- 可视化编辑标题、正文、级别、启用状态、跳转按钮
+- 右侧实时预览，与用户在软件里看到的效果一致
+- **读取线上公告**：把当前线上版本拉回编辑器修改
+- **一键发布**：调用 GitHub Contents API 直接提交到仓库（需要 Contents: Read and write 权限的 Token）
+- **导出 JSON**：不想用 Token 时，导出文件后手动上传覆盖即可
+
+> Token 以 Base64 形式保存在本机 `%AppData%\HWZ工作室\公告编辑器\settings.json`，这是防肩窥的编码而非加密，请勿在公用电脑上保存。
+
 ## 界面
 
 **代码互换（浅色）**
@@ -101,8 +139,13 @@ Python · JavaScript · TypeScript · C# · Java · C++
 │   ├── Updating/               #   自动更新
 │   │   ├── UpdateService.cs    #     GitHub Releases 检查/下载/自替换
 │   │   └── UpdateUi.cs         #     检查与提示的统一交互
-│   ├── Views/                  #   8 个页面 + 更新对话框
+│   ├── Announcements/          #   公告
+│   │   ├── Announcement.cs     #     公告数据模型
+│   │   └── AnnouncementService.cs
+│   ├── Views/                  #   8 个页面 + 更新/公告对话框
 │   └── Themes/                 #   浅色 / 深色主题
+├── HWZAnnouncementTool/        # 公告编辑器（独立 WPF 程序）
+├── announcement.json           # 线上公告内容（客户端读取此文件）
 ├── web/                        # 网页版（纯静态，无依赖）
 │   ├── index.html
 │   └── assets/

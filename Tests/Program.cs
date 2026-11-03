@@ -216,7 +216,7 @@ static async Task RunUpdateTest()
     var type = typeof(UpdateService);
     var parseVersion = type.GetMethod("ParseVersion", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
 
-    foreach (var tag in new[] { "v1.0.0", "v1.0.1", "1.2.3", "v2.0.0-beta.1", "v1.0.0.4" })
+    foreach (var tag in new[] { "v1.0.0", "v1.0.1", "v1.0.2beta", "1.2.3", "v2.0.0-beta.1", "v1.0.0.4" })
     {
         var parsed = (Version)parseVersion.Invoke(null, new object[] { tag })!;
         var comparison = parsed > UpdateService.CurrentVersion ? "更新" : "不更新";

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using HWZCodeBridge.Announcements;
 using HWZCodeBridge.Core;
 using HWZCodeBridge.Updating;
 using HWZCodeBridge.Views;
@@ -27,9 +28,31 @@ public partial class MainWindow : Window
     {
         Navigate("convert");
 
-        // 让首屏先完成渲染，再做后台更新检查，避免启动卡顿
+        // 让首屏先完成渲染，再做后台请求，避免启动卡顿
         await Task.Delay(1500);
+
+        // 先展示公告（信息），再检查更新（动作），这样用户不会因为直接更新而漏看公告
+        await ShowAnnouncementAsync();
         await RunStartupUpdateCheckAsync();
+    }
+
+    /// <summary>拉取并展示公告。任何异常都不影响启动。</summary>
+    private async Task ShowAnnouncementAsync()
+    {
+        try
+        {
+            var announcement = await new AnnouncementService()
+                .FetchAsync(SettingsStore.Current.UpdateRepo, CancellationToken.None);
+
+            if (announcement is null) return;
+
+            var window = new AnnouncementWindow(announcement) { Owner = this };
+            window.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug("公告", "展示公告失败：" + ex.Message);
+        }
     }
 
     /// <summary>启动时的自动更新检查：静默模式，只在发现新版本时打扰用户。</summary>

@@ -73,10 +73,15 @@ public sealed class UpdateService
     private static Version ParseVersion(string tag)
     {
         var text = (tag ?? "").Trim().TrimStart('v', 'V');
-        var dash = text.IndexOf('-');
-        if (dash > 0) text = text[..dash];
 
-        return Version.TryParse(text, out var parsed) ? Normalize(parsed) : new Version(0, 0, 0, 0);
+        // 兼容 1.2.3 / 1.2.3-beta / 1.2.3beta / 1.2.3-rc.1 等写法：
+        // 只取开头连续的「数字与点」，其余后缀（beta、rc 等）一律忽略
+        var match = System.Text.RegularExpressions.Regex.Match(text, @"^\d+(?:\.\d+)*");
+        if (!match.Success) return new Version(0, 0, 0, 0);
+
+        return Version.TryParse(match.Value, out var parsed)
+            ? Normalize(parsed)
+            : new Version(0, 0, 0, 0);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -165,9 +170,11 @@ public sealed class UpdateService
             return null;
         }
 
-        // 取体积最大的 exe，避免误选校验文件或安装器
-        JsonElement? best = null;
-        long bestSize = -1;
+        // 同一个 Release 里可能同时挂了主程序和配套工具，
+        // 优先选择名称以 HWZCodeBridge 开头的 exe，否则退化为"体积最大的 exe"。
+        JsonElement? preferred = null;
+        JsonElement? largest = null;
+        long largestSize = -1;
 
         foreach (var asset in assets.EnumerateArray())
         {
@@ -181,13 +188,20 @@ public sealed class UpdateService
                 ? s.GetInt64()
                 : 0;
 
-            if (size > bestSize)
+            if (size > largestSize)
             {
-                best = asset;
-                bestSize = size;
+                largest = asset;
+                largestSize = size;
+            }
+
+            if (preferred is null &&
+                name.StartsWith("HWZCodeBridge", StringComparison.OrdinalIgnoreCase))
+            {
+                preferred = asset;
             }
         }
 
+        var best = preferred ?? largest;
         if (best is null) return null;
 
         var picked = best.Value;
@@ -209,6 +223,10 @@ public sealed class UpdateService
 
         var version = tag.TrimStart('v', 'V');
 
+        var assetSize = picked.TryGetProperty("size", out var sizeEl) && sizeEl.ValueKind == JsonValueKind.Number
+            ? sizeEl.GetInt64()
+            : 0;
+
         return new UpdateInfo
         {
             Version = string.IsNullOrWhiteSpace(version) ? "0.0.0" : version,
@@ -217,7 +235,7 @@ public sealed class UpdateService
             Notes = body,
             DownloadUrl = downloadUrl,
             AssetName = string.IsNullOrWhiteSpace(assetName) ? "HWZCodeBridge.exe" : assetName,
-            SizeBytes = bestSize,
+            SizeBytes = assetSize,
             Sha256 = sha256,
             PublishedAt = publishedAt,
             HtmlUrl = htmlUrl

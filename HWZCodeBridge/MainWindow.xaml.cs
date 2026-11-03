@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using HWZCodeBridge.Core;
+using HWZCodeBridge.Updating;
 using HWZCodeBridge.Views;
 
 namespace HWZCodeBridge;
@@ -18,8 +19,36 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Loaded += (_, _) => Navigate("convert");
+        Loaded += OnLoaded;
         Closed += (_, _) => Logger.Info("退出", "程序正常关闭");
+    }
+
+    private async void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        Navigate("convert");
+
+        // 让首屏先完成渲染，再做后台更新检查，避免启动卡顿
+        await Task.Delay(1500);
+        await RunStartupUpdateCheckAsync();
+    }
+
+    /// <summary>启动时的自动更新检查：静默模式，只在发现新版本时打扰用户。</summary>
+    private async Task RunStartupUpdateCheckAsync()
+    {
+        var settings = SettingsStore.Current;
+
+        if (!settings.AutoCheckUpdate) return;
+
+        // 24 小时内不重复自动检查，避免频繁请求 GitHub
+        if (DateTime.TryParse(settings.LastUpdateCheck, out var last) &&
+            (DateTime.Now - last).TotalHours < 24)
+        {
+            Logger.Debug("更新", "距上次检查不足 24 小时，跳过自动检查");
+            return;
+        }
+
+        Logger.Debug("更新", "开始启动自动检查");
+        await UpdateUi.CheckAndPromptAsync(this, quiet: true);
     }
 
     private void Nav_Checked(object sender, RoutedEventArgs e)

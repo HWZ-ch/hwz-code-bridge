@@ -12,5 +12,6 @@
     <Compile Include="..\HWZCodeBridge\Convert\*.cs" />
     <Compile Include="..\HWZCodeBridge\Core\*.cs" />
     <Compile Include="..\HWZCodeBridge\Build\*.cs" />
+    <Compile Include="..\HWZCodeBridge\Updating\UpdateService.cs" />
   </ItemGroup>
 </Project>

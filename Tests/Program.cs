@@ -2,12 +2,19 @@ using System.Diagnostics;
 using System.IO;
 using HWZCodeBridge.Build;
 using HWZCodeBridge.Convert;
+using HWZCodeBridge.Updating;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 if (args.Length > 0 && args[0] == "build")
 {
     await RunBuildTest();
+    return;
+}
+
+if (args.Length > 0 && args[0] == "update")
+{
+    await RunUpdateTest();
     return;
 }
 
@@ -178,5 +185,71 @@ static async Task RunBuildTest()
 
         Console.WriteLine(output);
         Console.WriteLine($"进程退出码 = {process.ExitCode}");
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 自动更新链路验证
+// ─────────────────────────────────────────────────────────────
+
+static async Task RunUpdateTest()
+{
+    Console.WriteLine("=== 更新服务诊断 ===");
+    Console.WriteLine("当前版本: v" + UpdateService.CurrentVersionText);
+    Console.WriteLine("可执行文件: " + UpdateService.GetExecutablePath());
+    Console.WriteLine();
+
+    Console.WriteLine("=== 1. 实际请求 GitHub Releases API ===");
+    var result = await new UpdateService().CheckAsync("HWZ-ch/hwz-code-bridge", CancellationToken.None);
+    Console.WriteLine("状态   : " + result.Status);
+    Console.WriteLine("消息   : " + result.Message);
+    if (result.Info is not null)
+    {
+        Console.WriteLine("版本   : v" + result.Info.Version);
+        Console.WriteLine("资源   : " + result.Info.AssetName + " (" + result.Info.SizeText + ")");
+        Console.WriteLine("SHA256 : " + (result.Info.Sha256.Length > 0 ? result.Info.Sha256 : "(未提供)"));
+        Console.WriteLine("下载   : " + result.Info.DownloadUrl);
+    }
+    Console.WriteLine();
+
+    Console.WriteLine("=== 2. 版本比较逻辑（反射调用私有方法）===");
+    var type = typeof(UpdateService);
+    var parseVersion = type.GetMethod("ParseVersion", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+
+    foreach (var tag in new[] { "v1.0.0", "v1.0.1", "1.2.3", "v2.0.0-beta.1", "v1.0.0.4" })
+    {
+        var parsed = (Version)parseVersion.Invoke(null, new object[] { tag })!;
+        var comparison = parsed > UpdateService.CurrentVersion ? "更新" : "不更新";
+        Console.WriteLine($"  {tag,-16} → {parsed.Major}.{parsed.Minor}.{parsed.Build}.{parsed.Revision}  ({comparison})");
+    }
+    Console.WriteLine();
+
+    Console.WriteLine("=== 3. Release JSON 解析（含 digest 校验）===");
+    var parseRelease = type.GetMethod("ParseRelease", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+    var fakeJson = """
+        {
+          "tag_name": "v1.2.0",
+          "name": "v1.2.0 正式版",
+          "body": "修复若干问题",
+          "html_url": "https://github.com/HWZ-ch/hwz-code-bridge/releases/tag/v1.2.0",
+          "published_at": "2026-11-10T08:00:00Z",
+          "assets": [
+            { "name": "checksums.sha256", "size": 120, "browser_download_url": "https://example.com/checksums.sha256" },
+            { "name": "HWZCodeBridge.exe", "size": 66334586, "browser_download_url": "https://example.com/HWZCodeBridge.exe", "digest": "sha256:abc123def456" }
+          ]
+        }
+        """;
+
+    var info = (UpdateInfo?)parseRelease.Invoke(null, new object[] { fakeJson });
+    if (info is null) Console.WriteLine("  解析失败");
+    else
+    {
+        Console.WriteLine("  版本   : v" + info.Version);
+        Console.WriteLine("  标题   : " + info.Title);
+        Console.WriteLine("  资源   : " + info.AssetName);
+        Console.WriteLine("  大小   : " + info.SizeText);
+        Console.WriteLine("  哈希   : " + info.Sha256);
+        Console.WriteLine("  发布   : " + info.PublishedText);
+        Console.WriteLine("  ✓ 正确跳过了非 exe 资源：" + (info.AssetName.EndsWith(".exe") ? "是" : "否"));
     }
 }

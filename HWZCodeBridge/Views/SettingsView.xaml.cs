@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using HWZCodeBridge.Core;
 using HWZCodeBridge.Themes;
+using HWZCodeBridge.Updating;
 using Microsoft.Win32;
 
 namespace HWZCodeBridge.Views;
@@ -43,7 +44,41 @@ public partial class SettingsView : UserControl
 
         DataPathText.Text = $"配置文件、转换记录与日志都保存在：\n{AppPaths.RootDir}";
 
+        UpdateVersionText.Text = "v" + UpdateService.CurrentVersionText;
+        AutoUpdateCheck.IsChecked = s.AutoCheckUpdate;
+        UpdateStatusText.Text = BuildUpdateStatusText(s);
+
         _loading = false;
+    }
+
+    private static string BuildUpdateStatusText(AppSettings s)
+    {
+        if (string.IsNullOrWhiteSpace(s.LastUpdateCheck)) return "尚未检查过更新";
+
+        return DateTime.TryParse(s.LastUpdateCheck, out var time)
+            ? $"上次检查：{time:yyyy-MM-dd HH:mm}"
+            : "尚未检查过更新";
+    }
+
+    private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        CheckUpdateBtn.IsEnabled = false;
+        UpdateStatusText.Text = "正在检查…";
+
+        try
+        {
+            var message = await UpdateUi.CheckAndPromptAsync(Window.GetWindow(this));
+            UpdateStatusText.Text = message + " · " + DateTime.Now.ToString("HH:mm");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("更新", "手动检查更新异常", ex.ToString());
+            UpdateStatusText.Text = "检查失败";
+        }
+        finally
+        {
+            CheckUpdateBtn.IsEnabled = true;
+        }
     }
 
     private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -76,6 +111,7 @@ public partial class SettingsView : UserControl
         s.RememberLanguages = RememberCheck.IsChecked == true;
         s.CopyResultAfterConvert = CopyCheck.IsChecked == true;
         s.ConfirmBeforeBuild = ConfirmCheck.IsChecked == true;
+        s.AutoCheckUpdate = AutoUpdateCheck.IsChecked == true;
         SettingsStore.Save();
     }
 

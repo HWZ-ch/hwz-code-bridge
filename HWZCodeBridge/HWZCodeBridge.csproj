@@ -8,9 +8,9 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>HWZCodeBridge</AssemblyName>
     <RootNamespace>HWZCodeBridge</RootNamespace>
-    <Version>1.0.0</Version>
-    <FileVersion>1.0.0.0</FileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <Version>1.0.1</Version>
+    <FileVersion>1.0.1.0</FileVersion>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
     <Product>HWZ 代码互换工坊</Product>
     <Company>HWZ工作室</Company>
     <Authors>HWZ工作室</Authors>

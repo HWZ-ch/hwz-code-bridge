@@ -17,6 +17,19 @@ public sealed class AppSettings
     public bool ConfirmBeforeBuild { get; set; } = true;
     public string BuildArchitecture { get; set; } = "win-x64";
 
+    // ── 自动更新 ──────────────────────────────
+    /// <summary>启动时自动检查 GitHub 是否有新版本。</summary>
+    public bool AutoCheckUpdate { get; set; } = true;
+
+    /// <summary>用户选择"跳过此版本"时记录，避免反复提示同一版本。</summary>
+    public string SkippedVersion { get; set; } = "";
+
+    /// <summary>上次检查时间的 ISO 字符串，用于限制自动检查频率。</summary>
+    public string LastUpdateCheck { get; set; } = "";
+
+    /// <summary>更新源仓库（owner/repo），留空则使用内置默认值。</summary>
+    public string UpdateRepo { get; set; } = "HWZ-ch/hwz-code-bridge";
+
     [JsonIgnore] public string ThemeDisplay => Theme == "Dark" ? "深色" : "浅色";
 }
 

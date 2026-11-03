@@ -33,7 +33,14 @@
                         <StackPanel Grid.Column="1" Margin="18,0,0,0">
                             <TextBlock Text="HWZ 代码互换工坊" FontSize="21" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock x:Name="VersionText" Style="{StaticResource Muted}" Margin="0,6,0,0" />
+
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBlock x:Name="VersionText" Style="{StaticResource Muted}"
+                                           VerticalAlignment="Center" />
+                                <Button Content="检查更新" Style="{StaticResource GhostButton}"
+                                        Padding="10,4" FontSize="11.5" Margin="12,0,0,0"
+                                        Click="CheckUpdate_Click" />
+                            </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                                 <Border CornerRadius="6" Padding="10,4" Background="{DynamicResource AccentSoftBrush}">

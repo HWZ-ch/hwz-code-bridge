@@ -3,7 +3,7 @@
 > 主流编程语言代码互换 + 源码打包为 Windows 可执行文件的一体化工具。
 > 提供 **Windows 桌面版** 与 **纯前端网页版** 两个形态，共用同一套转换引擎。
 
-**署名：HWZ工作室** · 版本 1.0.0
+**署名：HWZ工作室** · 版本 1.0.1
 
 ---
 
@@ -37,7 +37,7 @@ Python · JavaScript · TypeScript · C# · Java · C++
 | | 桌面版 | 网页版 |
 |---|---|---|
 | 形态 | 单个 `exe`，免安装 | 纯静态页面，浏览器打开即用 |
-| 位置 | `dist/HWZCodeBridge.exe` | `web/` |
+| 位置 | [Releases](https://github.com/HWZ-ch/hwz-code-bridge/releases/latest) 下载 | `web/` |
 | 运行环境 | Windows + .NET 8（已内置运行时） | 任意现代浏览器 |
 | 代码互换 | 全部 30 种组合 | 全部 30 种组合（同一套规则） |
 | 可执行文件 | 真实调用本机工具链编译出 exe | 生成打包命令 + 可下载 `.bat` 脚本 |
@@ -46,6 +46,25 @@ Python · JavaScript · TypeScript · C# · Java · C++
 
 > 浏览器沙箱无法访问文件系统与命令行，因此网页版不执行编译，而是产出与桌面版完全一致的打包命令。
 > 这是能力边界，不是功能缺失。
+
+## 自动更新
+
+桌面版内置基于 GitHub Releases 的更新机制：
+
+- **启动时自动检查**：默认开启，检查间隔 24 小时；发现新版本才提示，网络异常时静默不打扰
+- **手动检查**：「设置 → 更新」或「关于 → 检查更新」
+- **更新流程**：比对版本号 → 显示更新说明与安装包大小 → 下载并校验 SHA256 → 生成替换脚本 → 重启完成替换
+- **可控性**：支持「稍后提醒」与「跳过此版本」，后者不会再次提示同一版本
+- **完整性校验**：若 Release 资源带有 `digest` 字段，下载后会核对 SHA256，不一致则中止并删除临时文件
+
+更新源固定为 `HWZ-ch/hwz-code-bridge` 的 **Latest Release**。发布新版本的约定：
+
+1. 修改 `HWZCodeBridge.csproj` 中的 `<Version>`
+2. 重新 `dotnet publish` 生成单文件 exe
+3. 在 GitHub 创建对应 tag（如 `v1.0.2`）的 Release，把 exe 作为资源上传
+4. 已安装的旧版本会在下次检查时发现并提示
+
+> 运行中的 exe 无法自我覆盖，因此替换由一段临时批处理脚本在进程退出后完成，随后自动重启新版本。
 
 ## 界面
 
@@ -79,7 +98,10 @@ Python · JavaScript · TypeScript · C# · Java · C++
 │   ├── Build/                  #   编译编排
 │   │   ├── ToolRegistry.cs     #     第三方工具注册表（含来源/许可证）
 │   │   └── BuildService.cs     #     命令行调用与日志流
-│   ├── Views/                  #   7 个页面
+│   ├── Updating/               #   自动更新
+│   │   ├── UpdateService.cs    #     GitHub Releases 检查/下载/自替换
+│   │   └── UpdateUi.cs         #     检查与提示的统一交互
+│   ├── Views/                  #   8 个页面 + 更新对话框
 │   └── Themes/                 #   浅色 / 深色主题
 ├── web/                        # 网页版（纯静态，无依赖）
 │   ├── index.html
@@ -92,8 +114,7 @@ Python · JavaScript · TypeScript · C# · Java · C++
 ├── Tests/                      # 引擎与打包流程的验证程序
 ├── RenderTest/                 # 界面离屏渲染截图工具
 └── dist/
-    ├── HWZCodeBridge.exe       # 桌面版成品（自包含单文件）
-    └── preview/                # 界面截图
+    └── preview/                # 界面截图（桌面版成品见 Releases）
 ```
 
 ## 构建与运行

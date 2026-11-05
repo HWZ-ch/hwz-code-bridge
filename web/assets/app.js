@@ -992,6 +992,12 @@
 
         $('notice-close').addEventListener('click', closeNoticeBar);
 
+        $('notice-bar').addEventListener('click', function (e) {
+            // 点在按钮上时交给按钮自己处理，不触发整条的展开/收起
+            if (e.target.closest('button')) return;
+            toggleNotice();
+        });
+
         $('notice-detail').addEventListener('click', function () {
             if (!currentNotice) return;
             closeNoticeBar();
@@ -1057,30 +1063,51 @@
     }
 
     let currentNotice = null;
+    let noticeExpanded = false;
 
-    /** 顶部提示条：普通级只显示标题，注意级额外展示部分正文 */
+    /** 顶部提示条：普通级只显示标题，注意级额外展示部分正文；点击可展开全文 */
     function showNoticeBar(ann) {
-        const isWarn = ann.level === 'warn';
-
         currentNotice = ann;
+        noticeExpanded = false;
+
+        const isWarn = ann.level === 'warn';
 
         $('notice-dot').style.background = isWarn ? 'var(--warn)' : 'var(--accent)';
         $('notice-title').textContent = ann.title || '公告';
+        $('notice-summary').textContent = ann.content || '';
 
+        applyNoticeState();
+        $('notice-bar').classList.add('show');
+    }
+
+    function applyNoticeState() {
+        const ann = currentNotice;
+        if (!ann) return;
+
+        const bar = $('notice-bar');
         const summary = $('notice-summary');
+        const chevron = $('notice-chevron');
         const detail = $('notice-detail');
 
-        if (isWarn && ann.content) {
-            summary.textContent = ann.content;
-            summary.style.display = '-webkit-box';
-            detail.style.display = '';
-        } else {
-            summary.textContent = '';
-            summary.style.display = 'none';
-            detail.style.display = 'none';
-        }
+        const isWarn = ann.level === 'warn';
+        const hasContent = !!(ann.content && ann.content.trim());
 
-        $('notice-bar').classList.add('show');
+        // 收起态：普通级隐藏正文、注意级露出两行摘要；展开态：不分级别都显示全文
+        const showSummary = hasContent && (noticeExpanded || isWarn);
+
+        summary.style.display = showSummary ? '-webkit-box' : 'none';
+        chevron.style.display = hasContent ? '' : 'none';
+
+        bar.classList.toggle('expanded', noticeExpanded);
+        detail.style.display = (isWarn && hasContent) ? '' : 'none';
+    }
+
+    function toggleNotice() {
+        if (!currentNotice) return;
+        if (!currentNotice.content || !currentNotice.content.trim()) return;
+
+        noticeExpanded = !noticeExpanded;
+        applyNoticeState();
     }
 
     function closeNoticeBar() {

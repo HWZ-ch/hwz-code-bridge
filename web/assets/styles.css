@@ -632,6 +632,7 @@ code.cmd {
     opacity: 0;
     pointer-events: none;
     transition: transform .34s cubic-bezier(.22, .61, .36, 1), opacity .22s ease;
+    cursor: pointer;
 }
 
 .notice-bar.show {
@@ -654,6 +655,12 @@ code.cmd {
     min-width: 0;
 }
 
+.notice-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .notice-title {
     font-size: 13px;
     font-weight: 600;
@@ -662,6 +669,18 @@ code.cmd {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.notice-chevron {
+    flex: none;
+    font-size: 10px;
+    color: var(--text-2);
+    display: none;
+    transition: transform .18s ease;
+}
+
+.notice-bar.expanded .notice-chevron {
+    transform: rotate(180deg);
 }
 
 .notice-summary {
@@ -673,6 +692,13 @@ code.cmd {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* 展开后解除行数限制，并限制最大高度可滚动 */
+.notice-bar.expanded .notice-summary {
+    -webkit-line-clamp: unset;
+    max-height: 260px;
+    overflow-y: auto;
 }
 
 .notice-btn {

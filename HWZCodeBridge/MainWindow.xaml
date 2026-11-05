@@ -82,7 +82,9 @@
                 Margin="0,14,0,0" MinWidth="340" MaxWidth="640"
                 CornerRadius="14" Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
-                Visibility="Collapsed" Panel.ZIndex="200">
+                Visibility="Collapsed" Panel.ZIndex="200"
+                Cursor="Hand"
+                MouseLeftButtonUp="NoticeBar_MouseLeftButtonUp">
             <Border.RenderTransform>
                 <TranslateTransform x:Name="NoticeTransform" Y="-90" />
             </Border.RenderTransform>
@@ -102,13 +104,22 @@
                          Fill="{DynamicResource AccentBrush}" VerticalAlignment="Top" Margin="0,5,10,0" />
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock x:Name="NoticeTitle" FontSize="13" FontWeight="SemiBold"
-                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock x:Name="NoticeSummary" FontSize="12" Margin="0,4,0,0"
-                               TextWrapping="Wrap" MaxHeight="38" LineHeight="19"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               Visibility="Collapsed" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="NoticeTitle" FontSize="13" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock x:Name="NoticeChevron" Text="▾" FontSize="10" Margin="6,0,0,0"
+                                   VerticalAlignment="Center" Visibility="Collapsed"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <ScrollViewer x:Name="NoticeSummaryScroll" Margin="0,4,0,0" MaxHeight="38"
+                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  Visibility="Collapsed">
+                        <TextBlock x:Name="NoticeSummary" FontSize="12"
+                                   TextWrapping="Wrap" LineHeight="19"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </ScrollViewer>
                 </StackPanel>
 
                 <Button x:Name="NoticeDetailBtn" Grid.Column="2" Content="详情"

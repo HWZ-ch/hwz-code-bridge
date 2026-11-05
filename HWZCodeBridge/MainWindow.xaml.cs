@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using HWZCodeBridge.Announcements;
@@ -43,6 +44,7 @@ public partial class MainWindow : Window
     }
 
     private Announcement? _noticeAnnouncement;
+    private bool _noticeExpanded;
 
     /// <summary>拉取并展示公告。任何异常都不影响启动。</summary>
     private async Task ShowAnnouncementAsync()
@@ -81,25 +83,16 @@ public partial class MainWindow : Window
         var isWarn = string.Equals(announcement.Level, "warn", StringComparison.OrdinalIgnoreCase);
 
         NoticeTitle.Text = string.IsNullOrWhiteSpace(announcement.Title) ? "公告" : announcement.Title;
+        NoticeSummary.Text = announcement.Content;
 
         if (TryFindResource(isWarn ? "WarnBrush" : "AccentBrush") is Brush dotBrush)
         {
             NoticeDot.Fill = dotBrush;
         }
 
-        var hasBody = isWarn && !string.IsNullOrWhiteSpace(announcement.Content);
-
-        if (hasBody)
-        {
-            NoticeSummary.Text = announcement.Content;
-            NoticeSummary.Visibility = Visibility.Visible;
-            NoticeDetailBtn.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            NoticeSummary.Visibility = Visibility.Collapsed;
-            NoticeDetailBtn.Visibility = Visibility.Collapsed;
-        }
+        // 每次展示都从收起状态开始，避免沿用上次的展开状态
+        _noticeExpanded = false;
+        ApplyNoticeState();
 
         NoticeBar.Visibility = Visibility.Visible;
 
@@ -114,6 +107,53 @@ public partial class MainWindow : Window
         NoticeTransform.BeginAnimation(TranslateTransform.YProperty, slide);
 
         Logger.Info("公告", $"以顶部提示条展示（{announcement.Level}）：{announcement.Title}");
+    }
+
+    /// <summary>
+    /// 根据展开状态刷新公告条。
+    /// 收起时：普通级只露标题，注意级露出两行摘要。
+    /// 展开时：不分级别，统一显示完整正文（超出可滚动）。
+    /// </summary>
+    private void ApplyNoticeState()
+    {
+        var announcement = _noticeAnnouncement;
+        if (announcement is null) return;
+
+        var isWarn = string.Equals(announcement.Level, "warn", StringComparison.OrdinalIgnoreCase);
+        var hasContent = !string.IsNullOrWhiteSpace(announcement.Content);
+
+        var showSummary = hasContent && (_noticeExpanded || isWarn);
+
+        NoticeSummaryScroll.Visibility = showSummary ? Visibility.Visible : Visibility.Collapsed;
+        NoticeSummaryScroll.MaxHeight = _noticeExpanded ? 260 : 38;
+
+        NoticeChevron.Visibility = hasContent ? Visibility.Visible : Visibility.Collapsed;
+        NoticeChevron.Text = _noticeExpanded ? "▴" : "▾";
+
+        // 注意级在收起状态下提供「详情」，可直接打开完整弹窗
+        NoticeDetailBtn.Visibility = (isWarn && hasContent) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void NoticeBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        // 点在按钮上时交给按钮自己处理，不触发整条的展开/收起
+        if (FindAncestorButton(e.OriginalSource as DependencyObject) is not null) return;
+
+        if (_noticeAnnouncement is null) return;
+        if (string.IsNullOrWhiteSpace(_noticeAnnouncement.Content)) return;
+
+        _noticeExpanded = !_noticeExpanded;
+        ApplyNoticeState();
+    }
+
+    private static Button? FindAncestorButton(DependencyObject? element)
+    {
+        while (element is not null)
+        {
+            if (element is Button button) return button;
+            element = VisualTreeHelper.GetParent(element);
+        }
+        return null;
     }
 
     private void HideNoticeBar()

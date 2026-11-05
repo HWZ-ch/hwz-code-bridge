@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using HWZAnnouncementTool.Models;
 using HWZAnnouncementTool.Services;
+using HWZAnnouncementTool.Views;
 using Microsoft.Win32;
 
 namespace HWZAnnouncementTool;
@@ -169,6 +170,28 @@ public partial class MainWindow : Window
         {
             ReadBtn.IsEnabled = true;
         }
+    }
+
+    // ─────────────────────────────────────────────
+    // 仓库访问统计
+    // ─────────────────────────────────────────────
+
+    private void Traffic_Click(object sender, RoutedEventArgs e)
+    {
+        var repo = RepoBox.Text.Trim().Trim('/');
+
+        if (repo.Split('/').Length != 2)
+        {
+            MessageBox.Show(
+                "请先在「发布设置」里填写仓库（owner/repo），例如 HWZ-ch/hwz-code-bridge。",
+                "仓库未填写", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var window = new TrafficWindow(repo, TokenBox.Password.Trim()) { Owner = this };
+        window.ShowDialog();
+
+        SetStatus("已查看仓库访问统计。流量数据需要 Token 具备该仓库的 Administration 读权限。");
     }
 
     // ─────────────────────────────────────────────

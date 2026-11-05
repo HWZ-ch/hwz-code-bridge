@@ -230,7 +230,7 @@ static async Task RunUpdateTest()
         {
           "tag_name": "v1.2.0",
           "name": "v1.2.0 正式版",
-          "body": "修复若干问题",
+          "body": "修复若干问题\n\n<!-- build:7 -->",
           "html_url": "https://github.com/HWZ-ch/hwz-code-bridge/releases/tag/v1.2.0",
           "published_at": "2026-11-10T08:00:00Z",
           "assets": [
@@ -245,6 +245,7 @@ static async Task RunUpdateTest()
     else
     {
         Console.WriteLine("  版本   : v" + info.Version);
+        Console.WriteLine("  构建号 : " + (info.BuildNumber >= 0 ? info.BuildNumber.ToString() : "(未提供，将回退版本号比较)"));
         Console.WriteLine("  标题   : " + info.Title);
         Console.WriteLine("  资源   : " + info.AssetName);
         Console.WriteLine("  大小   : " + info.SizeText);

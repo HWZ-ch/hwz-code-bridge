@@ -22,6 +22,9 @@ public sealed record UpdateInfo
     public DateTime PublishedAt { get; init; }
     public string HtmlUrl { get; init; } = "";
 
+    /// <summary>隐藏构建号，来自 Release 说明中的 &lt;!-- build:N --&gt; 注释；-1 表示未提供。</summary>
+    public int BuildNumber { get; init; } = -1;
+
     public string SizeText => SizeBytes <= 0 ? "未知大小" : $"{SizeBytes / 1024.0 / 1024.0:0.0} MB";
     public string PublishedText => PublishedAt == DateTime.MinValue ? "" : PublishedAt.ToLocalTime().ToString("yyyy-MM-dd");
 }
@@ -55,9 +58,15 @@ public sealed class UpdateService
     public static Version CurrentVersion { get; } =
         Normalize(typeof(UpdateService).Assembly.GetName().Version ?? new Version(1, 0, 0, 0));
 
-    /// <summary>用于界面展示的三段式版本号，例如 1.0.0。</summary>
+    /// <summary>用于界面展示的三段式版本号，例如 1.0.2。</summary>
     public static string CurrentVersionText =>
         $"{CurrentVersion.Major}.{CurrentVersion.Minor}.{CurrentVersion.Build}";
+
+    /// <summary>
+    /// 隐藏构建号，取程序集版本的第四位（如 1.0.2.7 中的 7）。
+    /// 界面不展示它，只用于判断是否需要更新——这样同一个对外版本号可以多次发版。
+    /// </summary>
+    public static int CurrentBuild => CurrentVersion.Revision;
 
     private static HttpClient CreateClient()
     {
@@ -120,10 +129,23 @@ public sealed class UpdateService
                 return UpdateCheckResult.Fail("已找到版本信息，但其中没有可用的 .exe 资源，请检查 Release 附件。");
             }
 
-            var latest = ParseVersion(info.TagName);
-            Logger.Info("更新", $"检查完成：本地 {CurrentVersionText}，远程 {info.Version}");
+            // 优先比较隐藏构建号：只要两侧都有，就按构建号判断，
+            // 这样对外的三段版本号可以长期不变，靠构建号区分每一次发布。
+            // 任一侧缺失时退回语义化版本比较，保证旧 Release 仍然可用。
+            bool upToDate;
 
-            if (latest <= CurrentVersion)
+            if (info.BuildNumber >= 0 && CurrentBuild > 0)
+            {
+                upToDate = info.BuildNumber <= CurrentBuild;
+                Logger.Info("更新", $"检查完成：本地 v{CurrentVersionText}（构建 {CurrentBuild}）· 远程 v{info.Version}（构建 {info.BuildNumber}）");
+            }
+            else
+            {
+                upToDate = ParseVersion(info.TagName) <= CurrentVersion;
+                Logger.Info("更新", $"检查完成（按版本号比较）：本地 {CurrentVersionText}，远程 {info.Version}");
+            }
+
+            if (upToDate)
             {
                 return new UpdateCheckResult(UpdateStatus.UpToDate, info, $"当前已是最新版本 v{CurrentVersionText}。");
             }
@@ -223,6 +245,14 @@ public sealed class UpdateService
 
         var version = tag.TrimStart('v', 'V');
 
+        // 隐藏构建号：Release 说明里以 HTML 注释形式携带，普通用户看不到
+        var buildMatch = System.Text.RegularExpressions.Regex.Match(
+            body ?? "", @"<!--\s*build\s*:\s*(\d+)\s*-->", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        var buildNumber = buildMatch.Success && int.TryParse(buildMatch.Groups[1].Value, out var parsedBuild)
+            ? parsedBuild
+            : -1;
+
         var assetSize = picked.TryGetProperty("size", out var sizeEl) && sizeEl.ValueKind == JsonValueKind.Number
             ? sizeEl.GetInt64()
             : 0;
@@ -238,7 +268,8 @@ public sealed class UpdateService
             SizeBytes = assetSize,
             Sha256 = sha256,
             PublishedAt = publishedAt,
-            HtmlUrl = htmlUrl
+            HtmlUrl = htmlUrl,
+            BuildNumber = buildNumber
         };
     }
 

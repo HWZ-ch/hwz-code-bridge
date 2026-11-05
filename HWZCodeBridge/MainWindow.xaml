@@ -43,7 +43,8 @@
                 <!-- 底部署名 -->
                 <StackPanel DockPanel.Dock="Bottom" Margin="18,10,18,18">
                     <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,0,0,12" />
-                    <TextBlock Text="v1.0.0" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock x:Name="VersionLabel" Text="v1.0.2" FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="署名：HWZ工作室" FontSize="11.5" Margin="0,3,0,0"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
@@ -74,5 +75,51 @@
         <Grid Grid.Column="1">
             <ContentControl x:Name="PageHost" />
         </Grid>
+
+        <!-- ═════════ 顶部公告条（普通 / 注意级）═════════ -->
+        <Border x:Name="NoticeBar" Grid.Column="0" Grid.ColumnSpan="2"
+                VerticalAlignment="Top" HorizontalAlignment="Center"
+                Margin="0,14,0,0" MinWidth="340" MaxWidth="640"
+                CornerRadius="14" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                Visibility="Collapsed" Panel.ZIndex="200">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="NoticeTransform" Y="-90" />
+            </Border.RenderTransform>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.18" Color="#0A2020" />
+            </Border.Effect>
+
+            <Grid Margin="16,11,10,11">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Ellipse x:Name="NoticeDot" Grid.Column="0" Width="8" Height="8"
+                         Fill="{DynamicResource AccentBrush}" VerticalAlignment="Top" Margin="0,5,10,0" />
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="NoticeTitle" FontSize="13" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock x:Name="NoticeSummary" FontSize="12" Margin="0,4,0,0"
+                               TextWrapping="Wrap" MaxHeight="38" LineHeight="19"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Visibility="Collapsed" />
+                </StackPanel>
+
+                <Button x:Name="NoticeDetailBtn" Grid.Column="2" Content="详情"
+                        Style="{StaticResource GhostButton}" Padding="10,4" FontSize="11.5"
+                        Margin="12,0,0,0" VerticalAlignment="Center"
+                        Visibility="Collapsed" Click="NoticeDetail_Click" />
+
+                <Button Grid.Column="3" Content="✕" Style="{StaticResource GhostButton}"
+                        Padding="9,4" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"
+                        Click="NoticeClose_Click" />
+            </Grid>
+        </Border>
     </Grid>
 </Window>

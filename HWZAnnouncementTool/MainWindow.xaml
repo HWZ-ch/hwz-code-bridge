@@ -245,6 +245,8 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button x:Name="ReadBtn" Content="读取线上公告" Style="{StaticResource GhostButton}"
                         Margin="0,0,8,0" Click="Read_Click" />
+                <Button x:Name="TrafficBtn" Content="访问统计" Style="{StaticResource GhostButton}"
+                        Margin="0,0,8,0" Click="Traffic_Click" />
                 <Button x:Name="ExportBtn" Content="导出 JSON" Style="{StaticResource GhostButton}"
                         Margin="0,0,8,0" Click="Export_Click" />
                 <Button x:Name="PublishBtn" Content="发布到 GitHub" Style="{StaticResource PrimaryButton}"

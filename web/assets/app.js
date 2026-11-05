@@ -990,6 +990,14 @@
 
         $('ann-close').addEventListener('click', closeAnnouncement);
 
+        $('notice-close').addEventListener('click', closeNoticeBar);
+
+        $('notice-detail').addEventListener('click', function () {
+            if (!currentNotice) return;
+            closeNoticeBar();
+            showAnnouncement(currentNotice);
+        });
+
         $('announcement-modal').addEventListener('click', function (e) {
             if (e.target === this) closeAnnouncement();
         });
@@ -1034,11 +1042,49 @@
             if (!ann || ann.enabled === false) return;
             if (!ann.title && !ann.content) return;
 
-            showAnnouncement(ann);
-            log('info', '公告', '已展示公告：' + (ann.title || '（无标题）'));
+            if (ann.level === 'important') {
+                // 重要级：模态弹窗，确保用户完整看到
+                showAnnouncement(ann);
+                log('info', '公告', '已展示重要公告（弹窗）：' + (ann.title || '（无标题）'));
+            } else {
+                // 普通 / 注意级：顶部提示条，不打断操作
+                showNoticeBar(ann);
+                log('info', '公告', '已展示提示条（' + ann.level + '）：' + (ann.title || '（无标题）'));
+            }
         } catch (err) {
             log('info', '公告', '公告加载失败：' + (err && err.message ? err.message : String(err)));
         }
+    }
+
+    let currentNotice = null;
+
+    /** 顶部提示条：普通级只显示标题，注意级额外展示部分正文 */
+    function showNoticeBar(ann) {
+        const isWarn = ann.level === 'warn';
+
+        currentNotice = ann;
+
+        $('notice-dot').style.background = isWarn ? 'var(--warn)' : 'var(--accent)';
+        $('notice-title').textContent = ann.title || '公告';
+
+        const summary = $('notice-summary');
+        const detail = $('notice-detail');
+
+        if (isWarn && ann.content) {
+            summary.textContent = ann.content;
+            summary.style.display = '-webkit-box';
+            detail.style.display = '';
+        } else {
+            summary.textContent = '';
+            summary.style.display = 'none';
+            detail.style.display = 'none';
+        }
+
+        $('notice-bar').classList.add('show');
+    }
+
+    function closeNoticeBar() {
+        $('notice-bar').classList.remove('show');
     }
 
     function showAnnouncement(ann) {

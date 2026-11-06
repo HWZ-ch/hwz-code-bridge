@@ -18,6 +18,12 @@ if (args.Length > 0 && args[0] == "update")
     return;
 }
 
+if (args.Length > 0 && args[0] == "download")
+{
+    await RunDownloadTest();
+    return;
+}
+
 var pySample = """
                  # 计算斐波那契数列
                  def fib(n):
@@ -252,5 +258,71 @@ static async Task RunUpdateTest()
         Console.WriteLine("  哈希   : " + info.Sha256);
         Console.WriteLine("  发布   : " + info.PublishedText);
         Console.WriteLine("  ✓ 正确跳过了非 exe 资源：" + (info.AssetName.EndsWith(".exe") ? "是" : "否"));
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 真实下载 + SHA256 校验（端到端验证下载环节）
+// ─────────────────────────────────────────────────────────────
+
+static async Task RunDownloadTest()
+{
+    Console.WriteLine("=== 下载与校验 ===");
+
+    var service = new UpdateService();
+    var check = await service.CheckAsync("HWZ-ch/hwz-code-bridge", CancellationToken.None);
+
+    if (check.Info is null)
+    {
+        Console.WriteLine("未取到版本信息：" + check.Message);
+        return;
+    }
+
+    var info = check.Info;
+    Console.WriteLine($"目标版本: v{info.Version}（构建 {(info.BuildNumber >= 0 ? info.BuildNumber.ToString() : "未提供")}）");
+    Console.WriteLine($"资源    : {info.AssetName}，{info.SizeText}");
+    Console.WriteLine($"期望哈希: {info.Sha256}");
+    Console.WriteLine("开始下载…");
+
+    var started = Stopwatch.StartNew();
+    var lastPercent = -10;
+
+    var progress = new Progress<double>(p =>
+    {
+        var percent = (int)(p * 100);
+        if (percent >= lastPercent + 10)
+        {
+            lastPercent = percent;
+            Console.WriteLine($"  {percent}%  ({started.Elapsed.TotalSeconds:0.0}s)");
+        }
+    });
+
+    try
+    {
+        var path = await service.DownloadAsync(info, progress, CancellationToken.None);
+        started.Stop();
+
+        var file = new FileInfo(path);
+
+        Console.WriteLine();
+        Console.WriteLine("下载完成: " + file.FullName);
+        Console.WriteLine($"文件大小: {file.Length} 字节（发布信息 {info.SizeBytes}）");
+        Console.WriteLine($"耗时    : {started.Elapsed.TotalSeconds:0.0} 秒");
+
+        var sizeOk = info.SizeBytes <= 0 || file.Length == info.SizeBytes;
+        Console.WriteLine("大小一致: " + (sizeOk ? "是" : "否"));
+
+        // DownloadAsync 内部已比对 SHA256，走到这里说明校验通过；
+        // 再独立算一次，确认结果可靠。
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        using var fs = File.OpenRead(path);
+        var actual = System.Convert.ToHexString(sha.ComputeHash(fs)).ToLowerInvariant();
+
+        Console.WriteLine("独立复算: " + actual);
+        Console.WriteLine("校验结论: " + (actual.Equals(info.Sha256, StringComparison.OrdinalIgnoreCase) ? "通过 ✓" : "不一致 ✗"));
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("下载失败：" + ex.Message);
     }
 }

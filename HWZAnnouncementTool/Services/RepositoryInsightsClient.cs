@@ -23,6 +23,9 @@ public sealed class RepositoryInsightsClient
 
     private readonly HttpClient _client;
     private readonly bool _hasToken;
+    private readonly TokenKind _kind;
+
+    private enum TokenKind { None, Classic, FineGrained }
 
     private sealed record GitHubResponse(HttpStatusCode Status, string Body, string RateRemaining);
 
@@ -30,6 +33,13 @@ public sealed class RepositoryInsightsClient
     {
         _hasToken = !string.IsNullOrWhiteSpace(token);
 
+        if (_hasToken)
+        {
+            var value = token!.Trim();
+            _kind = value.StartsWith("github_pat_", StringComparison.OrdinalIgnoreCase)
+                ? TokenKind.FineGrained
+                : TokenKind.Classic;
+        }
         _client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
         _client.DefaultRequestHeaders.UserAgent.ParseAdd("HWZAnnouncementTool/1.1");
         _client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
@@ -106,6 +116,9 @@ public sealed class RepositoryInsightsClient
         if (views.Status != HttpStatusCode.OK)
         {
             snapshot.TrafficMessage = DescribeTrafficFailure(views);
+            snapshot.TrafficNeedsPermission =
+                views.Status == HttpStatusCode.Unauthorized ||
+                (views.Status == HttpStatusCode.Forbidden && views.RateRemaining != "0");
             return;
         }
 
@@ -148,7 +161,7 @@ public sealed class RepositoryInsightsClient
 
         foreach (var node in arr.EnumerateArray())
         {
-            var date = ToLocalDate(ReadString(node, "timestamp"));
+            var date = ToUtcDate(ReadString(node, "timestamp"));
             if (date.Length == 0) continue;
 
             list.Add(new TrafficDay
@@ -242,9 +255,15 @@ public sealed class RepositoryInsightsClient
             case HttpStatusCode.Forbidden when response.RateRemaining == "0":
                 return "GitHub API 请求次数已达上限，请稍后再试。";
             case HttpStatusCode.Forbidden:
-                return _hasToken
-                    ? "Token 权限不足：流量数据要求该仓库的 Administration 读权限（classic token 需 repo 整权）。"
-                    : "未填写 Token。流量数据只能由拥有该仓库写权限的账号读取。";
+                return _kind switch
+                {
+                    TokenKind.None =>
+                        "未填写 Token。流量数据只能由拥有该仓库写权限的账号读取。",
+                    TokenKind.FineGrained =>
+                        "Fine-grained Token 缺少流量权限：在该 Token 的 Repository permissions 中把 Administration 设为 Read-only 后重新刷新；或改用勾选 repo 范围的 classic token。",
+                    _ =>
+                        "Classic Token 权限不足：请勾选 repo 整个范围（仅 contents 不够），保存后重新刷新。"
+                };
             case HttpStatusCode.NotFound:
                 return "仓库不存在，或当前 Token 无权访问该仓库的流量数据。";
             default:
@@ -280,13 +299,15 @@ public sealed class RepositoryInsightsClient
             ? value
             : 0;
 
-    private static string ToLocalDate(string timestamp)
+    private static string ToUtcDate(string timestamp)
     {
         if (string.IsNullOrWhiteSpace(timestamp)) return "";
 
+        // GitHub Traffic 以 UTC 日切分，这里必须保持 UTC 口径，
+        // 否则非东八区时区会出现整体错位一天。
         return DateTimeOffset.TryParse(timestamp, CultureInfo.InvariantCulture,
             DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
-            ? parsed.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            ? parsed.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : "";
     }
 }

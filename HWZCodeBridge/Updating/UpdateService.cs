@@ -379,7 +379,8 @@ public sealed class UpdateService
 
         var scriptPath = Path.Combine(workDir, "apply-update.bat");
 
-        // 脚本刻意只用英文，避免不同代码页下的乱码
+        // 脚本刻意只用英文，避免不同代码页下的乱码；
+        // tasklist / find 一律用绝对路径，防止 PATH 中存在同名命令（如 Git 自带的 find）导致误判
         var script = """
                      @echo off
                      setlocal
@@ -388,7 +389,7 @@ public sealed class UpdateService
                      for %%F in ("%DST%") do set "EXE=%%~nxF"
 
                      :wait
-                     tasklist /FI "IMAGENAME eq %EXE%" 2>nul | find /I "%EXE%" >nul
+                     "%SystemRoot%\System32\tasklist.exe" /FI "IMAGENAME eq %EXE%" 2>nul | "%SystemRoot%\System32\find.exe" /I "%EXE%" >nul
                      if not errorlevel 1 (
                        timeout /t 1 /nobreak >nul
                        goto wait

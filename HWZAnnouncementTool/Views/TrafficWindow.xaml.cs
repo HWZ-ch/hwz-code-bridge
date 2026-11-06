@@ -80,7 +80,8 @@ public partial class TrafficWindow : Window
             }
             else
             {
-                ShowHint(data.TrafficMessage + " 星标、Fork 等公开指标不受影响，本机累计存档仍可查看。");
+                ShowHint(data.TrafficMessage + " 星标、Fork 等公开指标不受影响，本机累计存档仍可查看。",
+                    data.TrafficNeedsPermission);
                 SetStatus("仅显示公开数据，流量统计不可用。");
             }
         }
@@ -193,12 +194,12 @@ public partial class TrafficWindow : Window
         ChartEmpty.Visibility = Visibility.Collapsed;
 
         var max = Math.Max(1, visible.Max(d => d.Views));
-        var today = DateTime.Today.ToString("yyyy-MM-dd");
+        var utcToday = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
         for (var i = 0; i < visible.Count; i++)
         {
             var day = visible[i];
-            var isToday = day.Date == today;
+            var isLatest = i == visible.Count - 1;
 
             ChartGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
@@ -226,15 +227,17 @@ public partial class TrafficWindow : Window
                 Margin = new Thickness(4, 0, 4, 0),
                 CornerRadius = new CornerRadius(3, 3, 0, 0),
                 Background = Res("AccentBrush"),
-                Opacity = isToday ? 1.0 : 0.45,
+                Opacity = isLatest ? 1.0 : 0.45,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             });
 
             column.Children.Add(new TextBlock
             {
-                Text = isToday ? "今天" : day.Date.Length >= 10 ? day.Date[5..] : day.Date,
+                Text = isLatest && day.Date == utcToday
+                    ? "今天"
+                    : day.Date.Length >= 10 ? day.Date[5..] : day.Date,
                 FontSize = 10,
-                Foreground = Res(isToday ? "TextPrimaryBrush" : "TextSecondaryBrush"),
+                Foreground = Res(isLatest ? "TextPrimaryBrush" : "TextSecondaryBrush"),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 6, 0, 0)
             });
@@ -395,13 +398,30 @@ public partial class TrafficWindow : Window
 
     private void SetStatus(string text) => StatusText.Text = text;
 
-    private void ShowHint(string text)
+    private void ShowHint(string text, bool showTokenHelp = false)
     {
         HintText.Text = text;
+        TokenHelpBtn.Visibility = showTokenHelp ? Visibility.Visible : Visibility.Collapsed;
         HintCard.Visibility = Visibility.Visible;
     }
 
-    private void HideHint() => HintCard.Visibility = Visibility.Collapsed;
+    private void HideHint()
+    {
+        HintCard.Visibility = Visibility.Collapsed;
+        TokenHelpBtn.Visibility = Visibility.Collapsed;
+    }
+
+    private void TokenHelp_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("https://github.com/settings/tokens") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetStatus("打开浏览器失败：" + ex.Message);
+        }
+    }
 
     private Brush Res(string key) => TryFindResource(key) as Brush ?? Brushes.Gray;
 

@@ -69,6 +69,9 @@ public sealed class RepositorySnapshot
     /// <summary>流量数据不可用时的原因说明。</summary>
     public string TrafficMessage { get; set; } = "";
 
+    /// <summary>流量不可用是否由 Token 权限导致（用于在界面上给出 Token 设置入口）。</summary>
+    public bool TrafficNeedsPermission { get; set; }
+
     public DateTimeOffset FetchedAt { get; set; } = DateTimeOffset.Now;
 
     // ── 本机累计口径（由 TrafficArchiveStore 填充）──
